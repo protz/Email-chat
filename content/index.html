@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>tbChat</title>
+    <link rel="stylesheet" href="style.css" type="text/css" media="screen">
+    <script src="js/jquery-1.5.min.js" type="text/javascript" charset="utf-8"></script>
+    <script src="js/tbChat.js" type="text/javascript" charset="utf-8"></script>
+</head>
+
+<body>
+
+<div id="wrapper">
+    
+    <div id="subject">
+        <h1>FOSDEM chat design</h1>
+    </div>
+    
+    <ul id="conversation" class="clearfix">
+        <li class="messageFrom">
+            <header>
+                <h2>Jonathan Protzenko</h2>
+            </header>
+            <section class="hbox">
+                <article class="boxFlex">
+                    <p>hey Andy</p>
+                </article>
+                <time>12:38pm</time>
+            </section>
+            <hr>
+            <section class="hbox">
+                <article class="boxFlex">
+                    <p>Can you put together a design for my FOSDEM talk?</p>
+                </article>
+                <time>12:39pm</time>
+            </section>
+            <div class="arrowFrom"></div>
+        </li>
+        <li class="messageTo">
+            <header>
+                <h2>Andy Chung</h2>
+            </header>
+            <section class="hbox">
+                <article class="boxFlex">
+                    <p>Sure thing!</p>
+                </article>
+                <time>12:49pm</time>
+            </section>
+            <div class="arrowTo"></div>
+        </li>
+        <li class="messageFrom">
+            <header>
+                <h2>Jonathan Protzenko</h2>
+            </header>
+            <section class="hbox">
+                <article class="boxFlex">
+                    <p>This looks terrible!</p>
+                </article>
+                <time>12:54pm</time>
+            </section>
+            <div class="arrowFrom"></div>
+        </li>
+        <li class="messageTo">
+            <header>
+                <h2>Andy Chung</h2>
+            </header>
+            <section class="hbox">
+                <article class="boxFlex">
+                    <p>Zut alors!</p>
+                </article>
+                <time>12:59pm</time>
+            </section>
+            <hr>
+            <section class="hbox">
+                <article class="boxFlex">
+                    <p>I'm trying to theme this the same way as the conversation reader.</p>
+                    <p>You'll have your own "Protz visual style" add-ons!</p>
+                </article>
+                <time>1:01pm</time>
+            </section>
+            <div class="arrowTo"></div>
+        </li>
+        <li class="messageFrom">
+            <header>
+                <h2>Jonathan Protzenko</h2>
+            </header>
+            <section class="hbox">
+                <article class="boxFlex">
+                    <p>C'est cool!</p>
+                </article>
+                <time>1:04pm</time>
+            </section>
+            <div class="arrowFrom"></div>
+        </li>
+    </ul>
+    
+    <div id="compose">
+        <div class="hbox">
+            <div class="boxFlex">
+                <textarea></textarea>
+            </div>
+            <div>
+                <button class="send">reply</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
