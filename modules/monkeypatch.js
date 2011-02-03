@@ -62,6 +62,7 @@ MonkeyPatch.prototype = {
     // Nuke the reference to any old message window. Happens if we close the
     //  main window and open a new one without restarting Thunderbird.
     getMail3Pane(true);
+    fillIdentities();
   },
 
   install: function (obj) {

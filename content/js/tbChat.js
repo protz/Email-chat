@@ -42,10 +42,17 @@ const Cu = Components.utils;
 const Cr = Components.results;
 
 Cu.import("resource:///modules/gloda/gloda.js");
+Cu.import("resource:///modules/templateUtils.js"); // for makeFriendlyDateAgo
 Cu.import("resource://emailchat/stdlib/msgHdrUtils.js");
+Cu.import("resource://emailchat/stdlib/misc.js");
+Cu.import("resource://emailchat/stdlib/compose.js");
+Cu.import("resource://emailchat/stdlib/send.js");
 Cu.import("resource://emailchat/log.js");
 
 let Log = setupLogging("EmailChat.UI");
+
+const gHeaderParser = Cc["@mozilla.org/messenger/headerparser;1"]
+                      .getService(Ci.nsIMsgHeaderParser);
 
 $(document).ready(function($) {
   // size elements
@@ -62,6 +69,9 @@ var gChat = null;
 function Chat (aMsg) {
   this.msgHdr = aMsg;
   this.query = null;
+  this.conversation = null;
+  this.seen = {};
+  this.lastMsgHdr = null;
 }
 
 Chat.prototype = {
@@ -90,6 +100,7 @@ Chat.prototype = {
           // object, there is a reference to the Gloda, so we should not worry
           // about that.
           self.query = aItems[0].conversation.getMessagesCollection(self, true);
+          self.conversation = aItems[0].conversation;
         } else {
           Log.error("Gloda query returned no messages.");
         }
@@ -101,15 +112,12 @@ Chat.prototype = {
   },
 
   // This is the part that makes us behave like a gloda listener.
-  onItemsAdded: function (aItems) {},
+  onItemsAdded: function (aItems) {
+    this.output(aItems);
+  },
   onItemsModified: function () {},
   onItemsRemoved: function () {},
-  onQueryCompleted: function (aCollection) {
-    let items = aCollection.items;
-    Log.assert(items.length, "The collection has no items, that's impossible!");
-
-    this.output(items);
-  },
+  onQueryCompleted: function (aCollection) {},
 
   /**
    * This function is called when we receive new messages in the conversation.
@@ -120,7 +128,49 @@ Chat.prototype = {
    * DOM node.
    */
   output: function (aGlodaMessages) {
-    Log.debug(aGlodaMessages.length, "messages in this email chat");
+    // Create the template data. This is the chunks variable, and it has this
+    // shape:
+    //  [{ name, email, fromMe, items: [{ text, date }] }]
+    let chunks = [];
+    for each (let [i, glodaMsg] in Iterator(aGlodaMessages)) {
+      // First, don't add to the chat view a message we've already seen.
+      if (glodaMsg.headerMessageID in this.seen)
+        continue;
+      this.seen[glodaMsg.headerMessageID] = null;
+
+      // glodaMsg: GlodaMessage
+      // glodaMsg.from: GlodaIdentity
+      // glodaMsg.from.contact: GlodaContact
+      let email = glodaMsg.from.value;
+      let name = glodaMsg.from.contact.name;
+      let fromMe = (email in gIdentities);
+      Log.debug(email, name, fromMe);
+      let lastChunk = chunks[chunks.length - 1];
+      // Shall we create a new "message block"? Yes if it's the first one, or if
+      //  the participant changed.
+      if (i == 0 || lastChunk.email != email) {
+        chunks.push({
+          name: name,
+          email: email,
+          clazz: fromMe ? "From" : "To",
+          items: [],
+        });
+        lastChunk = chunks[chunks.length - 1];
+      }
+
+      let data = {
+        body: glodaMsg._indexedBodyText,
+        date: makeFriendlyDateAgo(new Date(glodaMsg.date)),
+      };
+      lastChunk.items.push(data);
+
+      if (glodaMsg.folderMessage)
+        this.lastMsgHdr = glodaMsg.folderMessage;
+    }
+
+    // Output the data
+    $("#messageTemplate").tmpl(chunks).appendTo($("#conversation"));
+    $("#subjectText").text(this.conversation._subject);
   },
 
 };
@@ -136,3 +186,37 @@ $(document).ready(function () {
   gChat = new Chat(msgHdr);
   gChat.load();
 });
+
+function onSend () {
+  let w = getMail3Pane();
+  let msgHdr = gChat.lastMsgHdr;
+  let identity = w.getIdentityForHeader(msgHdr, Ci.nsIMsgCompType.ReplyAll) || gIdentities.default;
+  let { to, cc, bcc } = replyAllParams(identity, msgHdr);
+  let subject = "Re: " + msgHdr.mime2DecodedSubject;
+  let body = $("#mailBody").val();
+
+  sendMessage({
+    msgHdr: msgHdr,
+    identity: identity,
+    to: [gHeaderParser.makeFullAddress(name, email) for each ([name, email] in to)],
+    cc: [gHeaderParser.makeFullAddress(name, email) for each ([name, email] in cc)],
+    bcc: [gHeaderParser.makeFullAddress(name, email) for each ([name, email] in bcc)],
+    subject: subject,
+  }, {
+    compType: Ci.nsIMsgCompType.ReplyAll,
+    deliverType: Ci.nsIMsgCompDeliverMode.Now,
+  }, $("#mailBody")[0], {
+    progressListener: null,
+    sendListener: null,
+    stateListener: {
+      NotifyComposeFieldsReady: function() { },
+      NotifyComposeBodyReady: function() { },
+      SaveInFolderDone: function(folderURI) { },
+
+      ComposeProcessDone: function(aResult) {
+        if (NS_SUCCEEDED(aResult))
+          $("#mailBody").val("... message sent.");
+      },
+    },
+  });
+}

@@ -53,5 +53,8 @@ window.addEventListener("load", function _overlay_eventListener () {
     dump(e.stack+"\n");
     throw(e);
   }
+
+  // Fixup.
+  document.getElementById("dummychromebrowser").setAttribute("tooltip", "aHTMLTooltip");
 }, false);
 

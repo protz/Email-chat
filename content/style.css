@@ -22,6 +22,10 @@ hr {
     margin: 10px 0 8px;
 }
 
+:-moz-any(.messageFrom, .messageTo) > hr:last-of-type {
+  display: none;
+}
+
 #wrapper {
     width: 100%;
 }
