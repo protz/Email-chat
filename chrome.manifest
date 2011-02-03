@@ -1,0 +1,5 @@
+content emailchat content/
+skin emailchat classic/1.0 skin/
+resource emailchat modules/
+overlay chrome://messenger/content/messenger.xul chrome://emailchat/content/overlay.xul
+style chrome://global/content/customizeToolbar.xul chrome://emailchat/skin/overlay.css
