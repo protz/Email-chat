@@ -62,6 +62,8 @@ MonkeyPatch.prototype = {
     // Nuke the reference to any old message window. Happens if we close the
     //  main window and open a new one without restarting Thunderbird.
     getMail3Pane(true);
+    // We also have to call this at load-time. This is per the
+    //  thunderbird-stdlib specification, see the documentation.
     fillIdentities();
   },
 
@@ -69,10 +71,13 @@ MonkeyPatch.prototype = {
     obj.load = function () {
       let mainWindow = getMail3Pane();
       let tabmail = mainWindow.document.getElementById("tabmail");
+      // We might not always have a selected message, so check first
       let msgHdr = mainWindow.gFolderDisplay.selectedMessage;
       if (!msgHdr)
         return;
 
+      // chrometab is a builtin tab type, but we could also redefine our tab
+      //  type if we wanted to.
       tabmail.openTab("chromeTab", {
         chromePage: kStubUrl + "?uri=" + msgHdrGetUri(msgHdr),
       });

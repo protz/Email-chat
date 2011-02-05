@@ -54,6 +54,8 @@ let Log = setupLogging("EmailChat.UI");
 const gHeaderParser = Cc["@mozilla.org/messenger/headerparser;1"]
                       .getService(Ci.nsIMsgHeaderParser);
 
+const kSigRegExp = /-- \n((\s|.)*)+/m;
+
 $(document).ready(function($) {
   // size elements
   $(window).bind("load resize", function() {
@@ -113,6 +115,10 @@ Chat.prototype = {
 
   // This is the part that makes us behave like a gloda listener.
   onItemsAdded: function (aItems) {
+    // We use onItemsAdded so that if messages are added later on (i.e. because
+    //  we replied to the thread, for instance), we're notified too...
+    // Conversely, onQueryCompleted is only called once, when the initial batch
+    //  of messages has been fetched.
     this.output(aItems);
   },
   onItemsModified: function () {},
@@ -144,7 +150,7 @@ Chat.prototype = {
       let email = glodaMsg.from.value;
       let name = glodaMsg.from.contact.name;
       let fromMe = (email in gIdentities);
-      Log.debug(email, name, fromMe);
+      //Log.debug(email, name, fromMe);
       let lastChunk = chunks[chunks.length - 1];
       // Shall we create a new "message block"? Yes if it's the first one, or if
       //  the participant changed.
@@ -158,8 +164,9 @@ Chat.prototype = {
         lastChunk = chunks[chunks.length - 1];
       }
 
+      let body = glodaMsg._indexedBodyText.replace(kSigRegExp, "");
       let data = {
-        body: glodaMsg._indexedBodyText,
+        body: body,
         date: makeFriendlyDateAgo(new Date(glodaMsg.date)),
       };
       lastChunk.items.push(data);
@@ -171,6 +178,8 @@ Chat.prototype = {
     // Output the data
     $("#messageTemplate").tmpl(chunks).appendTo($("#conversation"));
     $("#subjectText").text(this.conversation._subject);
+    // This will also update the tab title
+    document.title = this.conversation._subject;
   },
 
 };
@@ -188,13 +197,21 @@ $(document).ready(function () {
 });
 
 function onSend () {
+  // This gets us a reference to the main window
   let w = getMail3Pane();
   let msgHdr = gChat.lastMsgHdr;
-  let identity = w.getIdentityForHeader(msgHdr, Ci.nsIMsgCompType.ReplyAll) || gIdentities.default;
+  // Which has that very convenient function called getIdentityForHeader
+  let identity = w.getIdentityForHeader(msgHdr, Ci.nsIMsgCompType.ReplyAll)
+    || gIdentities.default;
+  // Thunderbird-stdlib does the messy job of determining the compose
+  //  parameters for us
   let { to, cc, bcc } = replyAllParams(identity, msgHdr);
+  // mime2DecodedSubject already strips any RE:, Re: part
   let subject = "Re: " + msgHdr.mime2DecodedSubject;
-  let body = $("#mailBody").val();
 
+  // See the documentation for that big function's parameters. It will
+  //  automatically query the textarea (passed as $("#mailBody")[0]) for the
+  //  message text.
   sendMessage({
     msgHdr: msgHdr,
     identity: identity,
