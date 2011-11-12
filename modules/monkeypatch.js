@@ -43,7 +43,6 @@ const Cc = Components.classes;
 const Cu = Components.utils;
 const Cr = Components.results;
 
-Cu.import("resource://gre/modules/AddonManager.jsm");
 Cu.import("resource://emailchat/stdlib/misc.js");
 Cu.import("resource://emailchat/stdlib/msgHdrUtils.js");
 Cu.import("resource://emailchat/log.js");
